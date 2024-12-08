@@ -5,97 +5,85 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Inventory;
+use Illuminate\Support\Facades\Validator;
 
 class InventoryController extends Controller
 {
-    /**
-     * Display a listing of the inventory items.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    // Display a listing of the inventory items
     public function index()
     {
-        $items = Inventory::all();
-        return response()->json($items, 200);
+        $inventories = Inventory::all();
+        return response()->json($inventories, 200);
     }
 
-    /**
-     * Store a newly created inventory item in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
+    // Store a newly created inventory item in storage
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'quantity' => 'required|integer|min:0',
-            'price' => 'required|numeric|min:0',
+            'price' => 'required|numeric|min:0'
         ]);
 
-        $item = Inventory::create($validatedData);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-        return response()->json($item, 201);
+        $inventory = Inventory::create([
+            'name' => $request->name,
+            'quantity' => $request->quantity,
+            'price' => $request->price,
+        ]);
+
+        return response()->json($inventory, 201);
     }
 
-    /**
-     * Display the specified inventory item.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    // Display the specified inventory item
     public function show($id)
     {
-        $item = Inventory::find($id);
+        $inventory = Inventory::find($id);
 
-        if (!$item) {
-            return response()->json(['message' => 'Item not found'], 404);
+        if (!$inventory) {
+            return response()->json(['error' => 'Item not found'], 404);
         }
 
-        return response()->json($item, 200);
+        return response()->json($inventory, 200);
     }
 
-    /**
-     * Update the specified inventory item in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    // Update the specified inventory item in storage
     public function update(Request $request, $id)
     {
-        $item = Inventory::find($id);
+        $inventory = Inventory::find($id);
 
-        if (!$item) {
-            return response()->json(['message' => 'Item not found'], 404);
+        if (!$inventory) {
+            return response()->json(['error' => 'Item not found'], 404);
         }
 
-        $validatedData = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'quantity' => 'sometimes|required|integer|min:0',
-            'price' => 'sometimes|required|numeric|min:0',
+        $validator = Validator::make($request->all(), [
+            'name' => 'string|max:255',
+            'quantity' => 'integer|min:0',
+            'price' => 'numeric|min:0'
         ]);
 
-        $item->update($validatedData);
-
-        return response()->json($item, 200);
-    }
-
-    /**
-     * Remove the specified inventory item from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        $item = Inventory::find($id);
-
-        if (!$item) {
-            return response()->json(['message' => 'Item not found'], 404);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $item->delete();
+        $inventory->update($request->all());
+
+        return response()->json($inventory, 200);
+    }
+
+    // Remove the specified inventory item from storage
+    public function destroy($id)
+    {
+        $inventory = Inventory::find($id);
+
+        if (!$inventory) {
+            return response()->json(['error' => 'Item not found'], 404);
+        }
+
+        $inventory->delete();
 
         return response()->json(['message' => 'Item deleted successfully'], 200);
     }
