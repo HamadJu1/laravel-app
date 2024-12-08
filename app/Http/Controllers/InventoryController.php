@@ -29,8 +29,8 @@ class InventoryController extends Controller
     {
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'quantity' => 'required|integer|min:1',
-            'price' => 'required|numeric|min:0.01',
+            'quantity' => 'required|integer|min:0',
+            'price' => 'required|numeric|min:0',
         ]);
 
         $item = Inventory::create($validatedData);
@@ -71,9 +71,9 @@ class InventoryController extends Controller
         }
 
         $validatedData = $request->validate([
-            'name' => 'string|max:255',
-            'quantity' => 'integer|min:1',
-            'price' => 'numeric|min:0.01',
+            'name' => 'sometimes|required|string|max:255',
+            'quantity' => 'sometimes|required|integer|min:0',
+            'price' => 'sometimes|required|numeric|min:0',
         ]);
 
         $item->update($validatedData);
