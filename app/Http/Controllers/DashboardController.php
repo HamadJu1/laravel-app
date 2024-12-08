@@ -4,40 +4,51 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
-use App\Models\Post;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     /**
-     * Display the dashboard.
+     * Display the dashboard view.
      *
      * @return \Illuminate\View\View
      */
     public function index()
     {
-        // Fetching some example data for the dashboard
-        $userCount = User::count();
-        $postCount = Post::count();
-        $recentUsers = User::latest()->take(5)->get();
-        $recentPosts = Post::latest()->take(5)->get();
+        $user = Auth::user();
 
-        return view('dashboard.index', compact('userCount', 'postCount', 'recentUsers', 'recentPosts'));
+        return view('dashboard.index', ['user' => $user]);
     }
 
     /**
-     * Example method to handle specific data fetching for stats.
+     * Handle updating user settings from the dashboard.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function getStats()
+    public function updateSettings(Request $request)
     {
-        $stats = [
-            'users_count' => User::count(),
-            'posts_count' => Post::count(),
-        ];
+        $request->validate([
+            'email' => 'required|email',
+            'name' => 'required|string|max:255',
+        ]);
 
-        return response()->json($stats);
+        $user = Auth::user();
+        $user->update($request->only(['email', 'name']));
+
+        return redirect()->route('dashboard.index')->with('success', 'Settings updated successfully.');
+    }
+
+    /**
+     * Handle logging out the user from the dashboard.
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function logout()
+    {
+        Auth::logout();
+
+        return redirect()->route('login')->with('success', 'You have been logged out.');
     }
 }
 ```
