@@ -5,64 +5,71 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile.
+     * Display the profile of the authenticated user.
      *
      * @return \Illuminate\Http\Response
      */
     public function show()
     {
-        return view('profile.show', [
-            'user' => Auth::user(),
-        ]);
+        $user = Auth::user();
+        return response()->json($user, 200);
     }
 
     /**
-     * Update the user's profile information.
+     * Update the profile of the authenticated user.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . Auth::id(),
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'name' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $user = Auth::user();
-        $user->update($request->only('name', 'email'));
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-        return back()->with('status', 'Profile updated successfully.');
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+
+        if ($request->has('password')) {
+            $user->password = bcrypt($request->password);
+        }
+
+        $user->save();
+
+        return response()->json(['message' => 'Profile updated successfully.', 'user' => $user], 200);
     }
 
     /**
-     * Update the user's password.
+     * Delete the authenticated user's account.
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function updatePassword(Request $request)
+    public function destroy()
     {
-        $request->validate([
-            'current_password' => 'required',
-            'password' => ['required', 'confirmed', Password::defaults()],
-        ]);
-
         $user = Auth::user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
-            return back()->withErrors(['current_password' => 'The current password is incorrect.']);
-        }
+        $user->delete();
 
-        $user->update(['password' => Hash::make($request->password)]);
-
-        return back()->with('status', 'Password updated successfully.');
+        return response()->json(['message' => 'Account deleted successfully.'], 200);
     }
 }
 ```
