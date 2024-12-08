@@ -3,21 +3,35 @@
 
 @section('content')
 <div class="container">
-    <h1 class="mb-4">Profile</h1>
-    <div class="card">
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <img src="{{ auth()->user()->avatar }}" alt="Profile Picture" class="rounded-circle img-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">{{ __('Profile') }}</div>
+
+                <div class="card-body">
+                    @if (session('status'))
+                        <div class="alert alert-success" role="alert">
+                            {{ session('status') }}
+                        </div>
+                    @endif
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label"><strong>{{ __('Name') }}</strong></label>
+                        <p id="name">{{ $user->name }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label"><strong>{{ __('Email') }}</strong></label>
+                        <p id="email">{{ $user->email }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="created_at" class="form-label"><strong>{{ __('Member Since') }}</strong></label>
+                        <p id="created_at">{{ $user->created_at->format('F d, Y') }}</p>
+                    </div>
+
+                    <a href="{{ route('profile.edit') }}" class="btn btn-primary">{{ __('Edit Profile') }}</a>
                 </div>
-                <div class="col-md-8">
-                    <h2>{{ auth()->user()->name }}</h2>
-                    <p>Email: {{ auth()->user()->email }}</p>
-                    <p>Joined: {{ auth()->user()->created_at->format('M d, Y') }}</p>
-                </div>
-            </div>
-            <div class="text-end">
-                <a href="{{ route('profile.edit') }}" class="btn btn-primary">Edit Profile</a>
             </div>
         </div>
     </div>
