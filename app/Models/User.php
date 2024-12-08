@@ -1,56 +1,112 @@
+```php
 <?php
 
-namespace App\Models;
+namespace App\Http\Controllers;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
-class User extends Authenticatable
+class UserController extends Controller
 {
-    use HasFactory, Notifiable;
-
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * Display a listing of the users.
      */
-    protected $fillable = [
-        'username',  // Add the username field here
-        'email',
-        'password',
-    ];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function index()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',  // Ensures the password is treated as hashed
-        ];
+        $users = User::all();
+        return response()->json($users, 200);
     }
 
     /**
-     * Get the username attribute.
-     * 
-     * @return string
+     * Store a newly created user in storage.
      */
-    public function getUsernameAttribute()
+    public function store(Request $request)
     {
-        return $this->attributes['username'];
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json($user, 201);
+    }
+
+    /**
+     * Display the specified user.
+     */
+    public function show($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        return response()->json($user, 200);
+    }
+
+    /**
+     * Update the specified user in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $id,
+            'password' => 'sometimes|required|string|min:8',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+        if ($request->has('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return response()->json($user, 200);
+    }
+
+    /**
+     * Remove the specified user from storage.
+     */
+    public function destroy($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $user->delete();
+
+        return response()->json(['message' => 'User deleted successfully'], 200);
     }
 }
+```
