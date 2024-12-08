@@ -8,33 +8,42 @@ use App\Models\Inventory;
 
 class InventoryController extends Controller
 {
-    // Display a listing of the inventory items
+    /**
+     * Display a listing of the inventory items.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
         $items = Inventory::all();
-        return response()->json($items);
+        return response()->json($items, 200);
     }
 
-    // Show the form for creating a new inventory item
-    public function create()
-    {
-        return response()->json(['message' => 'Form for creating an inventory item']);
-    }
-
-    // Store a newly created inventory item in the database
+    /**
+     * Store a newly created inventory item in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'quantity' => 'required|integer',
-            'price' => 'required|numeric',
+            'quantity' => 'required|integer|min:1',
+            'price' => 'required|numeric|min:0.01',
         ]);
 
-        $item = Inventory::create($request->all());
+        $item = Inventory::create($validatedData);
+
         return response()->json($item, 201);
     }
 
-    // Display the specified inventory item
+    /**
+     * Display the specified inventory item.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function show($id)
     {
         $item = Inventory::find($id);
@@ -43,22 +52,16 @@ class InventoryController extends Controller
             return response()->json(['message' => 'Item not found'], 404);
         }
 
-        return response()->json($item);
+        return response()->json($item, 200);
     }
 
-    // Show the form for editing the specified inventory item
-    public function edit($id)
-    {
-        $item = Inventory::find($id);
-
-        if (!$item) {
-            return response()->json(['message' => 'Item not found'], 404);
-        }
-
-        return response()->json(['message' => 'Form for editing the inventory item', 'item' => $item]);
-    }
-
-    // Update the specified inventory item in the database
+    /**
+     * Update the specified inventory item in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function update(Request $request, $id)
     {
         $item = Inventory::find($id);
@@ -67,17 +70,23 @@ class InventoryController extends Controller
             return response()->json(['message' => 'Item not found'], 404);
         }
 
-        $request->validate([
+        $validatedData = $request->validate([
             'name' => 'string|max:255',
-            'quantity' => 'integer',
-            'price' => 'numeric',
+            'quantity' => 'integer|min:1',
+            'price' => 'numeric|min:0.01',
         ]);
 
-        $item->update($request->all());
-        return response()->json($item);
+        $item->update($validatedData);
+
+        return response()->json($item, 200);
     }
 
-    // Remove the specified inventory item from the database
+    /**
+     * Remove the specified inventory item from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function destroy($id)
     {
         $item = Inventory::find($id);
@@ -87,7 +96,8 @@ class InventoryController extends Controller
         }
 
         $item->delete();
-        return response()->json(['message' => 'Item deleted successfully']);
+
+        return response()->json(['message' => 'Item deleted successfully'], 200);
     }
 }
 ```
