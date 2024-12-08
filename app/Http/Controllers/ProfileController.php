@@ -5,71 +5,105 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
 use App\Models\User;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the profile of the authenticated user.
+     * Display the user's profile.
      *
      * @return \Illuminate\Http\Response
      */
-    public function show()
+    public function index()
     {
-        $user = Auth::user();
-        return response()->json($user, 200);
+        return view('profile.index', [
+            'user' => Auth::user(),
+        ]);
     }
 
     /**
-     * Update the profile of the authenticated user.
+     * Show the form for editing the user's profile.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function edit()
+    {
+        return view('profile.edit', [
+            'user' => Auth::user(),
+        ]);
+    }
+
+    /**
+     * Update the user's profile information.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request)
     {
-        $user = Auth::user();
-
-        $validator = Validator::make($request->all(), [
-            'name' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . Auth::id()],
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        if ($request->has('name')) {
-            $user->name = $request->name;
-        }
-
-        if ($request->has('email')) {
-            $user->email = $request->email;
-        }
-
-        if ($request->has('password')) {
-            $user->password = bcrypt($request->password);
-        }
-
+        $user = Auth::user();
+        $user->name = $request->input('name');
+        $user->email = $request->input('email');
         $user->save();
 
-        return response()->json(['message' => 'Profile updated successfully.', 'user' => $user], 200);
+        return redirect()->route('profile.index')->with('success', 'Profile updated successfully.');
     }
 
     /**
-     * Delete the authenticated user's account.
+     * Show the form for changing the user's password.
      *
      * @return \Illuminate\Http\Response
      */
-    public function destroy()
+    public function passwordEdit()
     {
+        return view('profile.password');
+    }
+
+    /**
+     * Update the user's password.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function passwordUpdate(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
         $user = Auth::user();
+        $user->password = Hash::make($request->input('password'));
+        $user->save();
+
+        return redirect()->route('profile.index')->with('success', 'Password updated successfully.');
+    }
+
+    /**
+     * Delete the user's account.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Request $request)
+    {
+        $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = Auth::user();
+        Auth::logout();
 
         $user->delete();
 
-        return response()->json(['message' => 'Account deleted successfully.'], 200);
+        return redirect('/')->with('success', 'Account deleted successfully.');
     }
 }
 ```
