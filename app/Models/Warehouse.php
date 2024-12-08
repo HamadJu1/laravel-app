@@ -8,7 +8,7 @@ use App\Models\Warehouse;
 
 class WarehouseController extends Controller
 {
-    // Display a listing of the warehouses
+    // Display a listing of warehouses
     public function index()
     {
         $warehouses = Warehouse::all();
@@ -18,59 +18,124 @@ class WarehouseController extends Controller
     // Show the form for creating a new warehouse
     public function create()
     {
-        // Normally handled in a view
+        // Implementation handled by frontend
     }
 
     // Store a newly created warehouse in storage
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'capacity' => 'required|integer|min:0',
         ]);
 
-        $warehouse = Warehouse::create($validatedData);
+        $warehouse = new Warehouse();
+        $warehouse->name = $request->name;
+        $warehouse->location = $request->location;
+        $warehouse->capacity = $request->capacity;
+        $warehouse->save();
 
-        return response()->json($warehouse, 201);
+        return response()->json(['message' => 'Warehouse successfully created', 'warehouse' => $warehouse], 201);
     }
 
     // Display the specified warehouse
     public function show($id)
     {
-        $warehouse = Warehouse::findOrFail($id);
+        $warehouse = Warehouse::find($id);
+
+        if (!$warehouse) {
+            return response()->json(['message' => 'Warehouse not found'], 404);
+        }
+
         return response()->json($warehouse);
     }
 
     // Show the form for editing the specified warehouse
     public function edit($id)
     {
-        // Normally handled in a view
+        // Implementation handled by frontend
     }
 
     // Update the specified warehouse in storage
     public function update(Request $request, $id)
     {
-        $warehouse = Warehouse::findOrFail($id);
-
-        $validatedData = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'location' => 'sometimes|string|max:255',
-            'capacity' => 'sometimes|integer|min:0',
+        $request->validate([
+            'name' => 'string|max:255',
+            'location' => 'string|max:255',
+            'capacity' => 'integer|min:0',
         ]);
 
-        $warehouse->update($validatedData);
+        $warehouse = Warehouse::find($id);
 
-        return response()->json($warehouse);
+        if (!$warehouse) {
+            return response()->json(['message' => 'Warehouse not found'], 404);
+        }
+
+        $warehouse->update($request->only(['name', 'location', 'capacity']));
+
+        return response()->json(['message' => 'Warehouse successfully updated', 'warehouse' => $warehouse]);
     }
 
     // Remove the specified warehouse from storage
     public function destroy($id)
     {
-        $warehouse = Warehouse::findOrFail($id);
+        $warehouse = Warehouse::find($id);
+
+        if (!$warehouse) {
+            return response()->json(['message' => 'Warehouse not found'], 404);
+        }
+
         $warehouse->delete();
 
-        return response()->json(['message' => 'Warehouse deleted successfully']);
+        return response()->json(['message' => 'Warehouse successfully deleted']);
+    }
+}
+```
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Warehouse extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'location',
+        'capacity',
+    ];
+}
+```
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateWarehousesTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('warehouses', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('location');
+            $table->integer('capacity');
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('warehouses');
     }
 }
 ```
