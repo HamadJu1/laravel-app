@@ -4,51 +4,62 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use App\Models\Order;
 
 class DashboardController extends Controller
 {
     /**
-     * Display the dashboard view.
+     * Display the dashboard overview.
      *
      * @return \Illuminate\View\View
      */
     public function index()
     {
-        $user = Auth::user();
+        $userCount = User::count();
+        $orderCount = Order::count();
+        $recentOrders = Order::latest()->take(5)->get();
+        $latestUsers = User::latest()->take(5)->get();
 
-        return view('dashboard.index', ['user' => $user]);
-    }
-
-    /**
-     * Handle updating user settings from the dashboard.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function updateSettings(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'name' => 'required|string|max:255',
+        return view('dashboard.index', [
+            'userCount' => $userCount,
+            'orderCount' => $orderCount,
+            'recentOrders' => $recentOrders,
+            'latestUsers' => $latestUsers
         ]);
-
-        $user = Auth::user();
-        $user->update($request->only(['email', 'name']));
-
-        return redirect()->route('dashboard.index')->with('success', 'Settings updated successfully.');
     }
 
     /**
-     * Handle logging out the user from the dashboard.
+     * Show the details of a specific order.
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @param int $id
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
-    public function logout()
+    public function showOrder($id)
     {
-        Auth::logout();
+        $order = Order::find($id);
 
-        return redirect()->route('login')->with('success', 'You have been logged out.');
+        if (!$order) {
+            return redirect()->route('dashboard.index')->with('error', 'Order not found.');
+        }
+
+        return view('dashboard.order-details', compact('order'));
+    }
+
+    /**
+     * Handle filtering orders based on status.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\View\View
+     */
+    public function filterOrders(Request $request)
+    {
+        $status = $request->input('status');
+        $orders = Order::when($status, function ($query) use ($status) {
+            return $query->where('status', $status);
+        })->paginate(10);
+
+        return view('dashboard.orders', compact('orders', 'status'));
     }
 }
 ```
