@@ -1,52 +1,56 @@
+```php
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\LoginController;
-use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\OrderController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
 */
 
-// Login Page
-Route::get('/', function () {
-    return view('login'); // Ensure you have a login.blade.php in resources/views
+// Homepage Route
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// User Routes
+Route::prefix('user')->group(function () {
+    Route::get('/', [UserController::class, 'index'])->name('user.index');
+    Route::get('/create', [UserController::class, 'create'])->name('user.create');
+    Route::post('/store', [UserController::class, 'store'])->name('user.store');
+    Route::get('/{id}', [UserController::class, 'show'])->name('user.show');
+    Route::get('/{id}/edit', [UserController::class, 'edit'])->name('user.edit');
+    Route::put('/{id}', [UserController::class, 'update'])->name('user.update');
+    Route::delete('/{id}', [UserController::class, 'destroy'])->name('user.destroy');
 });
 
-// Login Form Submission
-Route::post('/login', [LoginController::class, 'login'])->name('login');
+// Product Routes
+Route::prefix('product')->group(function () {
+    Route::get('/', [ProductController::class, 'index'])->name('product.index');
+    Route::get('/create', [ProductController::class, 'create'])->name('product.create');
+    Route::post('/store', [ProductController::class, 'store'])->name('product.store');
+    Route::get('/{id}', [ProductController::class, 'show'])->name('product.show');
+    Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('product.edit');
+    Route::put('/{id}', [ProductController::class, 'update'])->name('product.update');
+    Route::delete('/{id}', [ProductController::class, 'destroy'])->name('product.destroy');
+});
 
-// Define the route with the name 'dashboard'
-Route::middleware('auth')->get('/dashboard', function () {
-    return view('dashboard');
-})->name('dashboard');
+// Order Routes
+Route::prefix('order')->group(function () {
+    Route::get('/', [OrderController::class, 'index'])->name('order.index');
+    Route::get('/create', [OrderController::class, 'create'])->name('order.create');
+    Route::post('/store', [OrderController::class, 'store'])->name('order.store');
+    Route::get('/{id}', [OrderController::class, 'show'])->name('order.show');
+    Route::get('/{id}/edit', [OrderController::class, 'edit'])->name('order.edit');
+    Route::put('/{id}', [OrderController::class, 'update'])->name('order.update');
+    Route::delete('/{id}', [OrderController::class, 'destroy'])->name('order.destroy');
+});
 
-
-// Profile Page
-// Profile Page
-Route::middleware('auth')->get('/profile', function () {
-    return view('profile');
-})->name('profile');
-
-// Inventory Routes
-Route::middleware('auth')->get('/inventory', [InventoryController::class, 'index'])->name('inventory');
-Route::middleware('auth')->post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
-
-
-// Warehouse Routes
-Route::middleware('auth')->get('/warehouse', [WarehouseController::class, 'index'])->name('warehouse');
-Route::middleware('auth')->post('/warehouse', [WarehouseController::class, 'store'])->name('warehouse.store');
-
-// Logout Route
-Route::post('/logout', function () {
-    session()->flush(); // Or Auth::logout() if using Laravel's built-in authentication
-    return redirect('/');
-})->name('logout');
+// Fallback Route
+Route::fallback(function () {
+    return response()->view('errors.404', [], 404);
+});
+```
