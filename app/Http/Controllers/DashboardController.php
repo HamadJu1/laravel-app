@@ -8,35 +8,50 @@ use Illuminate\Http\Request;
 class DashboardController extends Controller
 {
     /**
-     * Display the dashboard page.
+     * Display the dashboard.
      *
      * @return \Illuminate\View\View
      */
     public function index()
     {
-        // Add logic here for any data you want to pass to the dashboard
-        $data = [
-            'user' => auth()->user(),
-            'stats' => $this->getDashboardStats(),
-        ];
-
-        return view('dashboard.index', $data);
+        return view('dashboard.index');
     }
 
     /**
-     * Fetch statistics or data needed for the dashboard.
+     * Handle data fetching for the dashboard analytics or widgets.
      *
-     * @return array
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    private function getDashboardStats()
+    public function fetchData(Request $request)
     {
-        // Mocked data as an example, replace with real calculations or queries
-        return [
-            'total_users' => 150,
-            'active_sessions' => 45,
-            'revenue' => 5000,
-            'tasks_completed' => 120,
+        // Example logic for fetching data for dashboard widgets.
+        $data = [
+            'totalUsers' => 1500, // Example static data
+            'monthlySales' => 9500.50, // Example static data
+            'activeSessions' => 320, // Example static data
         ];
+
+        return response()->json($data);
+    }
+
+    /**
+     * Handle saving preferences or settings for the dashboard.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveSettings(Request $request)
+    {
+        $validatedData = $request->validate([
+            'theme' => 'required|string|in:dark,light',
+            'layout' => 'required|string|in:grid,list',
+        ]);
+
+        // Code to save settings (e.g., database, session, etc.)
+        // Assume the settings are successfully saved
+
+        return response()->json(['message' => 'Settings saved successfully.']);
     }
 }
 ```
