@@ -5,61 +5,66 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Order;
+use App\Models\Post;
+use App\Models\Comment;
 
 class DashboardController extends Controller
 {
     /**
-     * Display the dashboard overview.
+     * Show the dashboard view.
      *
      * @return \Illuminate\View\View
      */
     public function index()
     {
         $userCount = User::count();
-        $orderCount = Order::count();
-        $recentOrders = Order::latest()->take(5)->get();
-        $latestUsers = User::latest()->take(5)->get();
+        $postCount = Post::count();
+        $commentCount = Comment::count();
 
         return view('dashboard.index', [
             'userCount' => $userCount,
-            'orderCount' => $orderCount,
-            'recentOrders' => $recentOrders,
-            'latestUsers' => $latestUsers
+            'postCount' => $postCount,
+            'commentCount' => $commentCount
         ]);
     }
 
     /**
-     * Show the details of a specific order.
+     * Fetch recent posts for the dashboard.
      *
-     * @param int $id
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function showOrder($id)
+    public function recentPosts()
     {
-        $order = Order::find($id);
+        $recentPosts = Post::orderBy('created_at', 'desc')->take(5)->get();
 
-        if (!$order) {
-            return redirect()->route('dashboard.index')->with('error', 'Order not found.');
-        }
-
-        return view('dashboard.order-details', compact('order'));
+        return response()->json($recentPosts);
     }
 
     /**
-     * Handle filtering orders based on status.
+     * Fetch recent comments for the dashboard.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function filterOrders(Request $request)
+    public function recentComments()
     {
-        $status = $request->input('status');
-        $orders = Order::when($status, function ($query) use ($status) {
-            return $query->where('status', $status);
-        })->paginate(10);
+        $recentComments = Comment::orderBy('created_at', 'desc')->take(5)->get();
 
-        return view('dashboard.orders', compact('orders', 'status'));
+        return response()->json($recentComments);
+    }
+
+    /**
+     * Fetch user statistics for the dashboard.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function userStatistics()
+    {
+        $userStats = [
+            'active' => User::where('status', 'active')->count(),
+            'inactive' => User::where('status', 'inactive')->count(),
+        ];
+
+        return response()->json($userStats);
     }
 }
 ```
