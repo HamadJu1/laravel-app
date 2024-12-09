@@ -4,20 +4,27 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    // Register a new user
+    /**
+     * User Registration
+     */
     public function register(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:6|confirmed',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
 
         $user = User::create([
             'name' => $request->name,
@@ -25,47 +32,51 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $token = $user->createToken('AuthToken')->plainTextToken;
+        $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ], 201);
+        return response()->json(['access_token' => $token, 'token_type' => 'Bearer'], 201);
     }
 
-    // Login existing user
+    /**
+     * User Login
+     */
     public function login(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
         }
 
-        $user = Auth::user();
-        $token = $user->createToken('AuthToken')->plainTextToken;
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ], 200);
+        $user = User::where('email', $request->email)->first();
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json(['access_token' => $token, 'token_type' => 'Bearer'], 200);
     }
 
-    // Logout user
-    public function logout(Request $request)
+    /**
+     * User Logout
+     */
+    public function logout()
     {
-        $request->user()->currentAccessToken()->delete();
+        auth()->user()->tokens()->delete();
 
-        return response()->json(['message' => 'Logged out successfully'], 200);
+        return response()->json(['message' => 'Successfully logged out']);
     }
 
-    // Get authenticated user's profile
-    public function profile(Request $request)
+    /**
+     * Get Authenticated User
+     */
+    public function userProfile(Request $request)
     {
-        return response()->json($request->user(), 200);
+        return response()->json(['user' => $request->user()]);
     }
 }
 ```
