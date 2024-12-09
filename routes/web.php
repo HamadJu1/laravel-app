@@ -3,28 +3,34 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OrderController;
 
-// Home Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/about', [HomeController::class, 'about'])->name('about');
-Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
+
+// User Routes
+Route::group(['prefix' => 'users'], function() {
+    Route::get('/', [UserController::class, 'index'])->name('users.index');
+    Route::get('/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('/', [UserController::class, 'store'])->name('users.store');
+    Route::get('/{user}', [UserController::class, 'show'])->name('users.show');
+    Route::get('/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::put('/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+});
 
 // Product Routes
-Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
-Route::post('/products', [ProductController::class, 'store'])->name('products.store');
-Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
-Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+Route::resource('products', ProductController::class);
 
-// Authentication Routes
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.post');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-// Dashboard Route (Requires Authentication)
-Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
+// Order Routes
+Route::group(['prefix' => 'orders'], function() {
+    Route::get('/', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/create', [OrderController::class, 'create'])->name('orders.create');
+    Route::post('/', [OrderController::class, 'store'])->name('orders.store');
+    Route::get('/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::put('/{order}', [OrderController::class, 'update'])->name('orders.update');
+    Route::delete('/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
 });
+
 ```
