@@ -5,14 +5,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile information.
+     * Display the user's profile.
+     *
+     * @return \Illuminate\Http\Response
      */
     public function show()
     {
@@ -21,7 +22,9 @@ class ProfileController extends Controller
     }
 
     /**
-     * Show the form for editing the profile.
+     * Show the form for editing the user's profile.
+     *
+     * @return \Illuminate\Http\Response
      */
     public function edit()
     {
@@ -30,32 +33,57 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the profile information.
+     * Update the user's profile.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
      */
     public function update(Request $request)
     {
         $user = Auth::user();
 
-        $validator = Validator::make($request->all(), [
+        $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|confirmed|min:8',
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($user->id),
+            ],
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $user->name = $request->name;
-        $user->email = $request->email;
-
-        if ($request->password) {
-            $user->password = Hash::make($request->password);
-        }
-
-        $user->save();
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
 
         return redirect()->route('profile.show')->with('success', 'Profile updated successfully.');
+    }
+
+    /**
+     * Update the user's password.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'Current password is incorrect.']);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return redirect()->route('profile.show')->with('success', 'Password updated successfully.');
     }
 }
 ```
