@@ -1,46 +1,84 @@
 ```php
 <?php
 
-namespace App\Models;
+namespace App\Http\Controllers;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
-class User extends Authenticatable
+class UserController extends Controller
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    /**
+     * Display a listing of users.
+     */
+    public function index()
+    {
+        return User::all();
+    }
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
+     * Store a newly created user in storage.
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return response()->json($user, 201);
+    }
 
     /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array
+     * Display the specified user.
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    public function show($id)
+    {
+        $user = User::findOrFail($id);
+
+        return response()->json($user);
+    }
 
     /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
+     * Update the specified user in storage.
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'sometimes|required|string|min:8|confirmed',
+        ]);
+
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($validated);
+
+        return response()->json($user);
+    }
+
+    /**
+     * Remove the specified user from storage.
+     */
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return response()->json(['message' => 'User deleted successfully']);
+    }
 }
 ```
