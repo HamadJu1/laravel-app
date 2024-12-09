@@ -3,23 +3,19 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Warehouse;
+use Illuminate\Http\Request;
 
 class WarehouseController extends Controller
 {
-    /**
-     * Display a listing of the warehouses.
-     */
+    // Display a listing of the warehouses
     public function index()
     {
         $warehouses = Warehouse::all();
-        return response()->json($warehouses, 200);
+        return response()->json($warehouses);
     }
 
-    /**
-     * Store a newly created warehouse in storage.
-     */
+    // Store a newly created warehouse in storage
     public function store(Request $request)
     {
         $request->validate([
@@ -28,58 +24,91 @@ class WarehouseController extends Controller
             'capacity' => 'required|integer|min:1',
         ]);
 
-        $warehouse = Warehouse::create($request->all());
+        $warehouse = Warehouse::create([
+            'name' => $request->name,
+            'location' => $request->location,
+            'capacity' => $request->capacity,
+        ]);
+
         return response()->json($warehouse, 201);
     }
 
-    /**
-     * Display the specified warehouse.
-     */
+    // Display the specified warehouse
     public function show($id)
     {
-        $warehouse = Warehouse::find($id);
-
-        if (!$warehouse) {
-            return response()->json(['message' => 'Warehouse not found'], 404);
-        }
-
-        return response()->json($warehouse, 200);
+        $warehouse = Warehouse::findOrFail($id);
+        return response()->json($warehouse);
     }
 
-    /**
-     * Update the specified warehouse in storage.
-     */
+    // Update the specified warehouse in storage
     public function update(Request $request, $id)
     {
-        $warehouse = Warehouse::find($id);
-
-        if (!$warehouse) {
-            return response()->json(['message' => 'Warehouse not found'], 404);
-        }
-
         $request->validate([
-            'name' => 'string|max:255',
-            'location' => 'string|max:255',
-            'capacity' => 'integer|min:1',
+            'name' => 'sometimes|string|max:255',
+            'location' => 'sometimes|string|max:255',
+            'capacity' => 'sometimes|integer|min:1',
         ]);
 
-        $warehouse->update($request->all());
-        return response()->json($warehouse, 200);
+        $warehouse = Warehouse::findOrFail($id);
+        $warehouse->update($request->only(['name', 'location', 'capacity']));
+
+        return response()->json($warehouse);
     }
 
-    /**
-     * Remove the specified warehouse from storage.
-     */
+    // Remove the specified warehouse from storage
     public function destroy($id)
     {
-        $warehouse = Warehouse::find($id);
-
-        if (!$warehouse) {
-            return response()->json(['message' => 'Warehouse not found'], 404);
-        }
-
+        $warehouse = Warehouse::findOrFail($id);
         $warehouse->delete();
-        return response()->json(['message' => 'Warehouse deleted successfully'], 200);
+
+        return response()->json(['message' => 'Warehouse deleted successfully']);
+    }
+}
+```
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Warehouse extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'location',
+        'capacity',
+    ];
+}
+```
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateWarehousesTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('warehouses', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('location');
+            $table->integer('capacity');
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('warehouses');
     }
 }
 ```
