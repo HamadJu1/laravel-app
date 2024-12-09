@@ -2,35 +2,37 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\OrderController;
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
-
-// User Routes
-Route::group(['prefix' => 'users'], function() {
-    Route::get('/', [UserController::class, 'index'])->name('users.index');
-    Route::get('/create', [UserController::class, 'create'])->name('users.create');
-    Route::post('/', [UserController::class, 'store'])->name('users.store');
-    Route::get('/{user}', [UserController::class, 'show'])->name('users.show');
-    Route::get('/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-    Route::put('/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+// Homepage Route
+Route::get('/', function () {
+    return view('welcome');
 });
 
-// Product Routes
-Route::resource('products', ProductController::class);
+// Authentication Routes
+Auth::routes();
 
-// Order Routes
-Route::group(['prefix' => 'orders'], function() {
-    Route::get('/', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('/create', [OrderController::class, 'create'])->name('orders.create');
-    Route::post('/', [OrderController::class, 'store'])->name('orders.store');
-    Route::get('/{order}', [OrderController::class, 'show'])->name('orders.show');
-    Route::put('/{order}', [OrderController::class, 'update'])->name('orders.update');
-    Route::delete('/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
+// Dashboard Route
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+// User Profile Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
 });
 
+// Admin Routes
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\AdminController::class, 'index'])->name('admin.dashboard');
+    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
+});
+
+// API Routes
+Route::prefix('api')->middleware('auth:api')->group(function () {
+    Route::get('/data', [App\Http\Controllers\Api\DataController::class, 'index'])->name('api.data.index');
+});
+
+// Fallback Route
+Route::fallback(function () {
+    return response()->view('errors.404', [], 404);
+});
 ```
