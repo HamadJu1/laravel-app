@@ -6,50 +6,80 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile.
+     * Display the user profile.
      */
-    public function index()
+    public function show()
     {
         $user = Auth::user();
-        return view('profile.index', compact('user'));
+
+        return response()->json([
+            'message' => 'User profile retrieved successfully.',
+            'data' => $user,
+        ]);
     }
 
     /**
-     * Show the form for editing the user's profile.
-     */
-    public function edit()
-    {
-        $user = Auth::user();
-        return view('profile.edit', compact('user'));
-    }
-
-    /**
-     * Update the user's profile information.
+     * Update the user profile.
      */
     public function update(Request $request)
     {
+        $user = Auth::user();
+
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . Auth::id(),
-            'password' => 'sometimes|nullable|min:8|confirmed',
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'password' => 'sometimes|string|confirmed|min:8',
         ]);
 
-        $user = Auth::user();
-        $user->name = $request->name;
-        $user->email = $request->email;
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
 
-        if ($request->password) {
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+
+        if ($request->has('password')) {
             $user->password = Hash::make($request->password);
         }
 
         $user->save();
 
-        return redirect()->route('profile.index')->with('success', 'Profile updated successfully.');
+        return response()->json([
+            'message' => 'User profile updated successfully.',
+            'data' => $user,
+        ]);
+    }
+
+    /**
+     * Change the user password.
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|confirmed|min:8',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The provided password does not match your current password.'],
+            ]);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully.',
+        ]);
     }
 }
 ```
