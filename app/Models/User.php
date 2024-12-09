@@ -1,86 +1,46 @@
 ```php
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Models;
 
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class UserController extends Controller
+class User extends Authenticatable
 {
-    public function index()
-    {
-        $users = User::all();
-        return response()->json($users, 200);
-    }
+    use HasApiTokens, HasFactory, Notifiable;
 
-    public function show($id)
-    {
-        $user = User::find($id);
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
 
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
-        return response()->json($user, 200);
-    }
-
-    public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|unique:users',
-            'password' => 'required|string|min:8'
-        ]);
-
-        $validatedData['password'] = Hash::make($validatedData['password']);
-
-        $user = User::create($validatedData);
-
-        return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $user = User::find($id);
-
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
-        $validatedData = $request->validate([
-            'name' => 'nullable|string|max:255',
-            'email' => [
-                'nullable',
-                'string',
-                'email',
-                Rule::unique('users')->ignore($user->id)
-            ],
-            'password' => 'nullable|string|min:8'
-        ]);
-
-        if (isset($validatedData['password'])) {
-            $validatedData['password'] = Hash::make($validatedData['password']);
-        }
-
-        $user->update($validatedData);
-
-        return response()->json(['message' => 'User updated successfully', 'user' => $user], 200);
-    }
-
-    public function destroy($id)
-    {
-        $user = User::find($id);
-
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
-        $user->delete();
-
-        return response()->json(['message' => 'User deleted successfully'], 200);
-    }
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
 }
 ```
