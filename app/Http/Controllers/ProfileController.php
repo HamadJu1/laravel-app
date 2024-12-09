@@ -6,25 +6,21 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
+use App\Models\User;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's profile.
-     *
-     * @return \Illuminate\Http\Response
      */
-    public function show()
+    public function index()
     {
         $user = Auth::user();
-        return view('profile.show', compact('user'));
+        return view('profile.index', compact('user'));
     }
 
     /**
      * Show the form for editing the user's profile.
-     *
-     * @return \Illuminate\Http\Response
      */
     public function edit()
     {
@@ -33,57 +29,27 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Update the user's profile information.
      */
     public function update(Request $request)
     {
-        $user = Auth::user();
-
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users')->ignore($user->id),
-            ],
-        ]);
-
-        $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-        ]);
-
-        return redirect()->route('profile.show')->with('success', 'Profile updated successfully.');
-    }
-
-    /**
-     * Update the user's password.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function updatePassword(Request $request)
-    {
-        $request->validate([
-            'current_password' => 'required',
-            'password' => 'required|string|min:8|confirmed',
+            'email' => 'required|string|email|max:255|unique:users,email,' . Auth::id(),
+            'password' => 'sometimes|nullable|min:8|confirmed',
         ]);
 
         $user = Auth::user();
+        $user->name = $request->name;
+        $user->email = $request->email;
 
-        if (!Hash::check($request->current_password, $user->password)) {
-            return back()->withErrors(['current_password' => 'Current password is incorrect.']);
+        if ($request->password) {
+            $user->password = Hash::make($request->password);
         }
 
-        $user->update([
-            'password' => Hash::make($request->password),
-        ]);
+        $user->save();
 
-        return redirect()->route('profile.show')->with('success', 'Password updated successfully.');
+        return redirect()->route('profile.index')->with('success', 'Profile updated successfully.');
     }
 }
 ```
