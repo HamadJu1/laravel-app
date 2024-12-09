@@ -1,59 +1,24 @@
 ```php
-// Route File: routes/web.php
+// routes/web.php
+
 use App\Http\Controllers\InventoryController;
 
-Route::resource('inventory', InventoryController::class);
+Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
+Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
+Route::get('/inventory/{id}', [InventoryController::class, 'show'])->name('inventory.show');
+Route::get('/inventory/{id}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
+Route::put('/inventory/{id}', [InventoryController::class, 'update'])->name('inventory.update');
+Route::delete('/inventory/{id}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+```
 
-// Migration File: database/migrations/2023_10_01_000000_create_inventories_table.php
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+```php
+// app/Http/Controllers/InventoryController.php
 
-class CreateInventoriesTable extends Migration
-{
-    public function up()
-    {
-        Schema::create('inventories', function (Blueprint $table) {
-            $table->id();
-            $table->string('item_name');
-            $table->string('sku')->unique();
-            $table->integer('quantity');
-            $table->decimal('price', 10, 2);
-            $table->text('description')->nullable();
-            $table->timestamps();
-        });
-    }
-
-    public function down()
-    {
-        Schema::dropIfExists('inventories');
-    }
-}
-
-// Model File: app/Models/Inventory.php
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class Inventory extends Model
-{
-    use HasFactory;
-
-    protected $fillable = [
-        'item_name',
-        'sku',
-        'quantity',
-        'price',
-        'description',
-    ];
-}
-
-// Controller File: app/Http/Controllers/InventoryController.php
 namespace App\Http\Controllers;
 
-use App\Models\Inventory;
 use Illuminate\Http\Request;
+use App\Models\Inventory;
 
 class InventoryController extends Controller
 {
@@ -71,83 +36,198 @@ class InventoryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'item_name' => 'required|string|max:255',
-            'sku' => 'required|string|max:255|unique:inventories',
-            'quantity' => 'required|integer',
+            'name' => 'required|string|max:255',
+            'quantity' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
         ]);
 
         Inventory::create($request->all());
-        return redirect()->route('inventory.index')->with('success', 'Item added successfully.');
+
+        return redirect()->route('inventory.index');
     }
 
-    public function show(Inventory $inventory)
+    public function show($id)
     {
-        return view('inventory.show', compact('inventory'));
+        $item = Inventory::findOrFail($id);
+        return view('inventory.show', compact('item'));
     }
 
-    public function edit(Inventory $inventory)
+    public function edit($id)
     {
-        return view('inventory.edit', compact('inventory'));
+        $item = Inventory::findOrFail($id);
+        return view('inventory.edit', compact('item'));
     }
 
-    public function update(Request $request, Inventory $inventory)
+    public function update(Request $request, $id)
     {
         $request->validate([
-            'item_name' => 'required|string|max:255',
-            'sku' => 'required|string|max:255|unique:inventories,sku,' . $inventory->id,
-            'quantity' => 'required|integer',
+            'name' => 'required|string|max:255',
+            'quantity' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
         ]);
 
-        $inventory->update($request->all());
-        return redirect()->route('inventory.index')->with('success', 'Item updated successfully.');
+        $item = Inventory::findOrFail($id);
+        $item->update($request->all());
+
+        return redirect()->route('inventory.index');
     }
 
-    public function destroy(Inventory $inventory)
+    public function destroy($id)
     {
-        $inventory->delete();
-        return redirect()->route('inventory.index')->with('success', 'Item deleted successfully.');
+        $item = Inventory::findOrFail($id);
+        $item->delete();
+
+        return redirect()->route('inventory.index');
     }
 }
+```
 
-// View File: resources/views/inventory/index.blade.php
+```php
+// app/Models/Inventory.php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Inventory extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'quantity',
+        'price',
+    ];
+}
+```
+
+```php
+// database/migrations/YYYY_MM_DD_create_inventories_table.php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateInventoriesTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('inventories', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->integer('quantity');
+            $table->decimal('price', 10, 2);
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('inventories');
+    }
+}
+```
+
+```php
+// resources/views/inventory/index.blade.php
+
 @extends('layouts.app')
 
 @section('content')
-    <h1>Inventory</h1>
-    <a href="{{ route('inventory.create') }}" class="btn btn-primary">Add Item</a>
-    <table class="table mt-4">
+    <h1>Inventory List</h1>
+    <a href="{{ route('inventory.create') }}">Add New Item</a>
+    <table>
         <thead>
             <tr>
-                <th>Item Name</th>
-                <th>SKU</th>
+                <th>ID</th>
+                <th>Name</th>
                 <th>Quantity</th>
                 <th>Price</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($items as $item)
+            @foreach($items as $item)
                 <tr>
-                    <td>{{ $item->item_name }}</td>
-                    <td>{{ $item->sku }}</td>
+                    <td>{{ $item->id }}</td>
+                    <td>{{ $item->name }}</td>
                     <td>{{ $item->quantity }}</td>
-                    <td>${{ $item->price }}</td>
+                    <td>{{ $item->price }}</td>
                     <td>
-                        <a href="{{ route('inventory.show', $item->id) }}" class="btn btn-info btn-sm">View</a>
-                        <a href="{{ route('inventory.edit', $item->id) }}" class="btn btn-warning btn-sm">Edit</a>
-                        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" style="display: inline-block;">
+                        <a href="{{ route('inventory.edit', $item->id) }}">Edit</a>
+                        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" style="display:inline;">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</button>
+                            <button type="submit">Delete</button>
                         </form>
+                        <a href="{{ route('inventory.show', $item->id) }}">View</a>
                     </td>
                 </tr>
             @endforeach
         </tbody>
     </table>
 @endsection
+```
 
-// Note: Use similar patterns to create the 'create', 'edit', 'show' blade files as required.
+```php
+// resources/views/inventory/create.blade.php
+
+@extends('layouts.app')
+
+@section('content')
+    <h1>Add New Inventory Item</h1>
+    <form action="{{ route('inventory.store') }}" method="POST">
+        @csrf
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" required>
+        
+        <label for="quantity">Quantity:</label>
+        <input type="number" name="quantity" id="quantity" required>
+        
+        <label for="price">Price:</label>
+        <input type="number" step="0.01" name="price" id="price" required>
+        
+        <button type="submit">Add Item</button>
+    </form>
+@endsection
+```
+
+```php
+// resources/views/inventory/edit.blade.php
+
+@extends('layouts.app')
+
+@section('content')
+    <h1>Edit Inventory Item</h1>
+    <form action="{{ route('inventory.update', $item->id) }}" method="POST">
+        @csrf
+        @method('PUT')
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" value="{{ $item->name }}" required>
+        
+        <label for="quantity">Quantity:</label>
+        <input type="number" name="quantity" id="quantity" value="{{ $item->quantity }}" required>
+        
+        <label for="price">Price:</label>
+        <input type="number" step="0.01" name="price" id="price" value="{{ $item->price }}" required>
+        
+        <button type="submit">Update Item</button>
+    </form>
+@endsection
+```
+
+```php
+// resources/views/inventory/show.blade.php
+
+@extends('layouts.app')
+
+@section('content')
+    <h1>Inventory Item Details</h1>
+    <p>ID: {{ $item->id }}</p>
+    <p>Name: {{ $item->name }}</p>
+    <p>Quantity: {{ $item->quantity }}</p>
+    <p>Price: {{ $item->price }}</p>
+    <a href="{{ route('inventory.index') }}">Back to Inventory List</a>
+@endsection
 ```
