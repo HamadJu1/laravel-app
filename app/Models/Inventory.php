@@ -3,13 +3,14 @@
 
 use App\Http\Controllers\InventoryController;
 
-Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
-Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
-Route::get('/inventory/{id}', [InventoryController::class, 'show'])->name('inventory.show');
-Route::get('/inventory/{id}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
-Route::put('/inventory/{id}', [InventoryController::class, 'update'])->name('inventory.update');
-Route::delete('/inventory/{id}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+Route::prefix('inventory')->group(function () {
+    Route::get('/', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/create', [InventoryController::class, 'create'])->name('inventory.create');
+    Route::post('/', [InventoryController::class, 'store'])->name('inventory.store');
+    Route::get('/{id}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
+    Route::put('/{id}', [InventoryController::class, 'update'])->name('inventory.update');
+    Route::delete('/{id}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+});
 ```
 
 ```php
@@ -17,8 +18,8 @@ Route::delete('/inventory/{id}', [InventoryController::class, 'destroy'])->name(
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Inventory;
+use Illuminate\Http\Request;
 
 class InventoryController extends Controller
 {
@@ -37,19 +38,12 @@ class InventoryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'quantity' => 'required|integer|min:0',
-            'price' => 'required|numeric|min:0',
+            'quantity' => 'required|integer',
+            'price' => 'required|numeric',
         ]);
 
         Inventory::create($request->all());
-
-        return redirect()->route('inventory.index');
-    }
-
-    public function show($id)
-    {
-        $item = Inventory::findOrFail($id);
-        return view('inventory.show', compact('item'));
+        return redirect()->route('inventory.index')->with('success', 'Item added successfully.');
     }
 
     public function edit($id)
@@ -62,22 +56,20 @@ class InventoryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'quantity' => 'required|integer|min:0',
-            'price' => 'required|numeric|min:0',
+            'quantity' => 'required|integer',
+            'price' => 'required|numeric',
         ]);
 
         $item = Inventory::findOrFail($id);
         $item->update($request->all());
-
-        return redirect()->route('inventory.index');
+        return redirect()->route('inventory.index')->with('success', 'Item updated successfully.');
     }
 
     public function destroy($id)
     {
         $item = Inventory::findOrFail($id);
         $item->delete();
-
-        return redirect()->route('inventory.index');
+        return redirect()->route('inventory.index')->with('success', 'Item deleted successfully.');
     }
 }
 ```
@@ -135,12 +127,15 @@ class CreateInventoriesTable extends Migration
 @extends('layouts.app')
 
 @section('content')
-    <h1>Inventory List</h1>
-    <a href="{{ route('inventory.create') }}">Add New Item</a>
-    <table>
+<div class="container">
+    <h1>Inventory</h1>
+    <a href="{{ route('inventory.create') }}" class="btn btn-primary mb-3">Add New Item</a>
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    <table class="table">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Name</th>
                 <th>Quantity</th>
                 <th>Price</th>
@@ -150,23 +145,23 @@ class CreateInventoriesTable extends Migration
         <tbody>
             @foreach($items as $item)
                 <tr>
-                    <td>{{ $item->id }}</td>
                     <td>{{ $item->name }}</td>
                     <td>{{ $item->quantity }}</td>
                     <td>{{ $item->price }}</td>
                     <td>
-                        <a href="{{ route('inventory.edit', $item->id) }}">Edit</a>
-                        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" style="display:inline;">
+                        <a href="{{ route('inventory.edit', $item->id) }}" class="btn btn-warning">Edit</a>
+                        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" style="display:inline-block;">
                             @csrf
                             @method('DELETE')
-                            <button type="submit">Delete</button>
+                            <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('Are you sure?')">Delete</button>
                         </form>
-                        <a href="{{ route('inventory.show', $item->id) }}">View</a>
                     </td>
                 </tr>
             @endforeach
         </tbody>
     </table>
+</div>
 @endsection
 ```
 
@@ -176,20 +171,25 @@ class CreateInventoriesTable extends Migration
 @extends('layouts.app')
 
 @section('content')
-    <h1>Add New Inventory Item</h1>
+<div class="container">
+    <h1>Add New Item</h1>
     <form action="{{ route('inventory.store') }}" method="POST">
         @csrf
-        <label for="name">Name:</label>
-        <input type="text" name="name" id="name" required>
-        
-        <label for="quantity">Quantity:</label>
-        <input type="number" name="quantity" id="quantity" required>
-        
-        <label for="price">Price:</label>
-        <input type="number" step="0.01" name="price" id="price" required>
-        
-        <button type="submit">Add Item</button>
+        <div class="mb-3">
+            <label for="name" class="form-label">Item Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="quantity" class="form-label">Quantity</label>
+            <input type="number" class="form-control" id="quantity" name="quantity" value="{{ old('quantity') }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="price" class="form-label">Price</label>
+            <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ old('price') }}" required>
+        </div>
+        <button type="submit" class="btn btn-success">Save</button>
     </form>
+</div>
 @endsection
 ```
 
@@ -199,35 +199,25 @@ class CreateInventoriesTable extends Migration
 @extends('layouts.app')
 
 @section('content')
-    <h1>Edit Inventory Item</h1>
+<div class="container">
+    <h1>Edit Item</h1>
     <form action="{{ route('inventory.update', $item->id) }}" method="POST">
         @csrf
         @method('PUT')
-        <label for="name">Name:</label>
-        <input type="text" name="name" id="name" value="{{ $item->name }}" required>
-        
-        <label for="quantity">Quantity:</label>
-        <input type="number" name="quantity" id="quantity" value="{{ $item->quantity }}" required>
-        
-        <label for="price">Price:</label>
-        <input type="number" step="0.01" name="price" id="price" value="{{ $item->price }}" required>
-        
-        <button type="submit">Update Item</button>
+        <div class="mb-3">
+            <label for="name" class="form-label">Item Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ $item->name }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="quantity" class="form-label">Quantity</label>
+            <input type="number" class="form-control" id="quantity" name="quantity" value="{{ $item->quantity }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="price" class="form-label">Price</label>
+            <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ $item->price }}" required>
+        </div>
+        <button type="submit" class="btn btn-success">Update</button>
     </form>
-@endsection
-```
-
-```php
-// resources/views/inventory/show.blade.php
-
-@extends('layouts.app')
-
-@section('content')
-    <h1>Inventory Item Details</h1>
-    <p>ID: {{ $item->id }}</p>
-    <p>Name: {{ $item->name }}</p>
-    <p>Quantity: {{ $item->quantity }}</p>
-    <p>Price: {{ $item->price }}</p>
-    <a href="{{ route('inventory.index') }}">Back to Inventory List</a>
+</div>
 @endsection
 ```
