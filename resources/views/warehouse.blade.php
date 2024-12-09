@@ -1,82 +1,93 @@
-```php
-<!-- resources/views/warehouse.blade.php -->
-@extends('layouts.app')
+```html
+<!-- warehouse.blade.php -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse</title>
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Warehouse Management</h1>
 
-@section('content')
-<div class="container mt-5">
-    <h1 class="text-center mb-4">Warehouse Management</h1>
-    
-    <!-- Alerts Section -->
-    @if (session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
+        <!-- Display Success Message -->
+        @if(session('success'))
+            <div class="alert alert-success">
+                {{ session('success') }}
+            </div>
+        @endif
 
-    @if (session('error'))
-        <div class="alert alert-danger">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    <!-- Add New Warehouse Form -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5>Add New Warehouse</h5>
-        </div>
-        <div class="card-body">
-            <form action="{{ route('warehouse.store') }}" method="POST">
-                @csrf
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="name">Warehouse Name</label>
-                        <input type="text" name="name" class="form-control" id="name" placeholder="Enter warehouse name" required>
+        <!-- Warehouse Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Add New Item</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('warehouse.store') }}" method="POST">
+                    @csrf
+                    <div class="form-group mb-3">
+                        <label for="item_name">Item Name</label>
+                        <input type="text" name="item_name" id="item_name" class="form-control" placeholder="Enter item name" required>
                     </div>
-                    <div class="form-group col-md-6">
-                        <label for="location">Location</label>
-                        <input type="text" name="location" class="form-control" id="location" placeholder="Enter location" required>
+                    <div class="form-group mb-3">
+                        <label for="quantity">Quantity</label>
+                        <input type="number" name="quantity" id="quantity" class="form-control" placeholder="Enter quantity" required>
                     </div>
-                </div>
-                <button type="submit" class="btn btn-primary">Add Warehouse</button>
-            </form>
+                    <div class="form-group mb-3">
+                        <label for="category">Category</label>
+                        <input type="text" name="category" id="category" class="form-control" placeholder="Enter category" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <!-- Warehouse List -->
-    <div class="card">
-        <div class="card-header">
-            <h5>Warehouse List</h5>
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-bordered">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Location</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($warehouses as $warehouse)
+        <!-- Item Listing -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Warehouse Inventory</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <thead>
                         <tr>
-                            <td>{{ $warehouse->id }}</td>
-                            <td>{{ $warehouse->name }}</td>
-                            <td>{{ $warehouse->location }}</td>
-                            <td>
-                                <a href="{{ route('warehouse.edit', $warehouse->id) }}" class="btn btn-warning btn-sm">Edit</a>
-                                <form action="{{ route('warehouse.destroy', $warehouse->id) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this warehouse?')">Delete</button>
-                                </form>
-                            </td>
+                            <th>ID</th>
+                            <th>Item Name</th>
+                            <th>Quantity</th>
+                            <th>Category</th>
+                            <th>Actions</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($items as $item)
+                            <tr>
+                                <td>{{ $item->id }}</td>
+                                <td>{{ $item->item_name }}</td>
+                                <td>{{ $item->quantity }}</td>
+                                <td>{{ $item->category }}</td>
+                                <td>
+                                    <a href="{{ route('warehouse.edit', $item->id) }}" class="btn btn-warning btn-sm">Edit</a>
+                                    <form action="{{ route('warehouse.destroy', $item->id) }}" method="POST" style="display: inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center">No items available</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-@endsection
+
+    <script src="{{ asset('js/app.js') }}"></script>
+</body>
+</html>
 ```
