@@ -13,8 +13,8 @@ class InventoryController extends Controller
      */
     public function index()
     {
-        $inventories = Inventory::all();
-        return response()->json($inventories, 200);
+        $items = Inventory::all();
+        return response()->json($items);
     }
 
     /**
@@ -25,16 +25,16 @@ class InventoryController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'quantity' => 'required|integer|min:0',
-            'price' => 'required|numeric|min:0'
+            'price' => 'required|numeric|min:0',
         ]);
 
-        $inventory = Inventory::create([
+        $item = Inventory::create([
             'name' => $request->name,
             'quantity' => $request->quantity,
-            'price' => $request->price
+            'price' => $request->price,
         ]);
 
-        return response()->json($inventory, 201);
+        return response()->json($item, 201);
     }
 
     /**
@@ -42,13 +42,13 @@ class InventoryController extends Controller
      */
     public function show($id)
     {
-        $inventory = Inventory::find($id);
+        $item = Inventory::find($id);
 
-        if (!$inventory) {
-            return response()->json(['error' => 'Item not found'], 404);
+        if (!$item) {
+            return response()->json(['message' => 'Item not found'], 404);
         }
 
-        return response()->json($inventory, 200);
+        return response()->json($item);
     }
 
     /**
@@ -56,21 +56,21 @@ class InventoryController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $inventory = Inventory::find($id);
+        $item = Inventory::find($id);
 
-        if (!$inventory) {
-            return response()->json(['error' => 'Item not found'], 404);
+        if (!$item) {
+            return response()->json(['message' => 'Item not found'], 404);
         }
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
             'quantity' => 'sometimes|integer|min:0',
-            'price' => 'sometimes|numeric|min:0'
+            'price' => 'sometimes|numeric|min:0',
         ]);
 
-        $inventory->update($request->only(['name', 'quantity', 'price']));
+        $item->update($request->all());
 
-        return response()->json($inventory, 200);
+        return response()->json($item);
     }
 
     /**
@@ -78,15 +78,15 @@ class InventoryController extends Controller
      */
     public function destroy($id)
     {
-        $inventory = Inventory::find($id);
+        $item = Inventory::find($id);
 
-        if (!$inventory) {
-            return response()->json(['error' => 'Item not found'], 404);
+        if (!$item) {
+            return response()->json(['message' => 'Item not found'], 404);
         }
 
-        $inventory->delete();
+        $item->delete();
 
-        return response()->json(['message' => 'Item deleted successfully'], 200);
+        return response()->json(['message' => 'Item deleted successfully']);
     }
 }
 ```
