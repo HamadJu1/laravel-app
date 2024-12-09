@@ -1,21 +1,62 @@
+Sure, here is the code for an Inventory module in Laravel:
+
+### Migration File: `create_inventory_table.php`
 ```php
-// routes/web.php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-use App\Http\Controllers\InventoryController;
+class CreateInventoryTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('inventory', function (Blueprint $table) {
+            $table->id();
+            $table->string('item_name');
+            $table->string('sku')->unique();
+            $table->integer('quantity')->default(0);
+            $table->decimal('price', 10, 2);
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
+    }
 
-Route::prefix('inventory')->group(function () {
-    Route::get('/', [InventoryController::class, 'index'])->name('inventory.index');
-    Route::get('/create', [InventoryController::class, 'create'])->name('inventory.create');
-    Route::post('/', [InventoryController::class, 'store'])->name('inventory.store');
-    Route::get('/{id}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
-    Route::put('/{id}', [InventoryController::class, 'update'])->name('inventory.update');
-    Route::delete('/{id}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
-});
+    public function down()
+    {
+        Schema::dropIfExists('inventory');
+    }
+}
 ```
 
-```php
-// app/Http/Controllers/InventoryController.php
+---
 
+### Model File: `Inventory.php`
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Inventory extends Model
+{
+    use HasFactory;
+
+    protected $table = 'inventory';
+
+    protected $fillable = [
+        'item_name',
+        'sku',
+        'quantity',
+        'price',
+        'description',
+    ];
+}
+```
+
+---
+
+### Controller File: `InventoryController.php`
+```php
 namespace App\Http\Controllers;
 
 use App\Models\Inventory;
@@ -26,198 +67,129 @@ class InventoryController extends Controller
     public function index()
     {
         $items = Inventory::all();
-        return view('inventory.index', compact('items'));
-    }
-
-    public function create()
-    {
-        return view('inventory.create');
+        return response()->json($items, 200);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'quantity' => 'required|integer',
-            'price' => 'required|numeric',
+            'item_name' => 'required|string|max:255',
+            'sku' => 'required|string|max:100|unique:inventory',
+            'quantity' => 'required|integer|min:0',
+            'price' => 'required|numeric|min:0',
         ]);
 
-        Inventory::create($request->all());
-        return redirect()->route('inventory.index')->with('success', 'Item added successfully.');
+        $inventory = Inventory::create($request->all());
+        return response()->json($inventory, 201);
     }
 
-    public function edit($id)
+    public function show($id)
     {
         $item = Inventory::findOrFail($id);
-        return view('inventory.edit', compact('item'));
+        return response()->json($item, 200);
     }
 
     public function update(Request $request, $id)
     {
+        $item = Inventory::findOrFail($id);
+
         $request->validate([
-            'name' => 'required|string|max:255',
-            'quantity' => 'required|integer',
-            'price' => 'required|numeric',
+            'item_name' => 'sometimes|required|string|max:255',
+            'sku' => 'sometimes|required|string|max:100|unique:inventory,sku,' . $id,
+            'quantity' => 'sometimes|required|integer|min:0',
+            'price' => 'sometimes|required|numeric|min:0',
         ]);
 
-        $item = Inventory::findOrFail($id);
         $item->update($request->all());
-        return redirect()->route('inventory.index')->with('success', 'Item updated successfully.');
+        return response()->json($item, 200);
     }
 
     public function destroy($id)
     {
         $item = Inventory::findOrFail($id);
         $item->delete();
-        return redirect()->route('inventory.index')->with('success', 'Item deleted successfully.');
+        return response()->json(null, 204);
     }
 }
 ```
 
+---
+
+### Routes File: `web.php` or `api.php`
 ```php
-// app/Models/Inventory.php
+use App\Http\Controllers\InventoryController;
 
-namespace App\Models;
+Route::prefix('inventory')->group(function () {
+    Route::get('/', [InventoryController::class, 'index']);
+    Route::post('/', [InventoryController::class, 'store']);
+    Route::get('/{id}', [InventoryController::class, 'show']);
+    Route::put('/{id}', [InventoryController::class, 'update']);
+    Route::delete('/{id}', [InventoryController::class, 'destroy']);
+});
+```
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+---
 
-class Inventory extends Model
+### Request File: `StoreInventoryRequest.php`
+```php
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreInventoryRequest extends FormRequest
 {
-    use HasFactory;
-
-    protected $fillable = [
-        'name',
-        'quantity',
-        'price',
-    ];
+    public function rules()
+    {
+        return [
+            'item_name' => 'required|string|max:255',
+            'sku' => 'required|string|max:100|unique:inventory',
+            'quantity' => 'required|integer|min:0',
+            'price' => 'required|numeric|min:0',
+        ];
+    }
 }
 ```
 
+---
+
+### Factory File: `InventoryFactory.php`
 ```php
-// database/migrations/YYYY_MM_DD_create_inventories_table.php
+namespace Database\Factories;
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use App\Models\Inventory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-class CreateInventoriesTable extends Migration
+class InventoryFactory extends Factory
 {
-    public function up()
-    {
-        Schema::create('inventories', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->integer('quantity');
-            $table->decimal('price', 10, 2);
-            $table->timestamps();
-        });
-    }
+    protected $model = Inventory::class;
 
-    public function down()
+    public function definition()
     {
-        Schema::dropIfExists('inventories');
+        return [
+            'item_name' => $this->faker->word,
+            'sku' => $this->faker->unique()->uuid,
+            'quantity' => $this->faker->numberBetween(1, 100),
+            'price' => $this->faker->randomFloat(2, 10, 500),
+            'description' => $this->faker->sentence,
+        ];
     }
 }
 ```
 
+---
+
+### Seeder File: `InventorySeeder.php`
 ```php
-// resources/views/inventory/index.blade.php
+namespace Database\Seeders;
 
-@extends('layouts.app')
+use Illuminate\Database\Seeder;
+use App\Models\Inventory;
 
-@section('content')
-<div class="container">
-    <h1>Inventory</h1>
-    <a href="{{ route('inventory.create') }}" class="btn btn-primary mb-3">Add New Item</a>
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($items as $item)
-                <tr>
-                    <td>{{ $item->name }}</td>
-                    <td>{{ $item->quantity }}</td>
-                    <td>{{ $item->price }}</td>
-                    <td>
-                        <a href="{{ route('inventory.edit', $item->id) }}" class="btn btn-warning">Edit</a>
-                        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" style="display:inline-block;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger"
-                                onclick="return confirm('Are you sure?')">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-</div>
-@endsection
-```
-
-```php
-// resources/views/inventory/create.blade.php
-
-@extends('layouts.app')
-
-@section('content')
-<div class="container">
-    <h1>Add New Item</h1>
-    <form action="{{ route('inventory.store') }}" method="POST">
-        @csrf
-        <div class="mb-3">
-            <label for="name" class="form-label">Item Name</label>
-            <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="quantity" class="form-label">Quantity</label>
-            <input type="number" class="form-control" id="quantity" name="quantity" value="{{ old('quantity') }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="price" class="form-label">Price</label>
-            <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ old('price') }}" required>
-        </div>
-        <button type="submit" class="btn btn-success">Save</button>
-    </form>
-</div>
-@endsection
-```
-
-```php
-// resources/views/inventory/edit.blade.php
-
-@extends('layouts.app')
-
-@section('content')
-<div class="container">
-    <h1>Edit Item</h1>
-    <form action="{{ route('inventory.update', $item->id) }}" method="POST">
-        @csrf
-        @method('PUT')
-        <div class="mb-3">
-            <label for="name" class="form-label">Item Name</label>
-            <input type="text" class="form-control" id="name" name="name" value="{{ $item->name }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="quantity" class="form-label">Quantity</label>
-            <input type="number" class="form-control" id="quantity" name="quantity" value="{{ $item->quantity }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="price" class="form-label">Price</label>
-            <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ $item->price }}" required>
-        </div>
-        <button type="submit" class="btn btn-success">Update</button>
-    </form>
-</div>
-@endsection
+class InventorySeeder extends Seeder
+{
+    public function run()
+    {
+        Inventory::factory()->count(50)->create();
+    }
+}
 ```
