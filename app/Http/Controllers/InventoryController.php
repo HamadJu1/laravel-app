@@ -8,38 +8,27 @@ use App\Models\Inventory;
 
 class InventoryController extends Controller
 {
-    /**
-     * Display a listing of the inventory items.
-     */
+    // Display a listing of the inventory items
     public function index()
     {
         $items = Inventory::all();
-        return response()->json($items);
+        return response()->json($items, 200);
     }
 
-    /**
-     * Store a newly created inventory item in storage.
-     */
+    // Store a newly created inventory item in storage
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'quantity' => 'required|integer|min:0',
-            'price' => 'required|numeric|min:0',
+            'quantity' => 'required|integer|min:1',
+            'price' => 'required|numeric'
         ]);
 
-        $item = Inventory::create([
-            'name' => $request->name,
-            'quantity' => $request->quantity,
-            'price' => $request->price,
-        ]);
-
+        $item = Inventory::create($validatedData);
         return response()->json($item, 201);
     }
 
-    /**
-     * Display the specified inventory item.
-     */
+    // Display the specified inventory item
     public function show($id)
     {
         $item = Inventory::find($id);
@@ -48,12 +37,10 @@ class InventoryController extends Controller
             return response()->json(['message' => 'Item not found'], 404);
         }
 
-        return response()->json($item);
+        return response()->json($item, 200);
     }
 
-    /**
-     * Update the specified inventory item in storage.
-     */
+    // Update the specified inventory item in storage
     public function update(Request $request, $id)
     {
         $item = Inventory::find($id);
@@ -62,20 +49,18 @@ class InventoryController extends Controller
             return response()->json(['message' => 'Item not found'], 404);
         }
 
-        $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'quantity' => 'sometimes|integer|min:0',
-            'price' => 'sometimes|numeric|min:0',
+        $validatedData = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'quantity' => 'nullable|integer|min:1',
+            'price' => 'nullable|numeric'
         ]);
 
-        $item->update($request->all());
+        $item->update($validatedData);
 
-        return response()->json($item);
+        return response()->json($item, 200);
     }
 
-    /**
-     * Remove the specified inventory item from storage.
-     */
+    // Remove the specified inventory item from storage
     public function destroy($id)
     {
         $item = Inventory::find($id);
@@ -86,7 +71,7 @@ class InventoryController extends Controller
 
         $item->delete();
 
-        return response()->json(['message' => 'Item deleted successfully']);
+        return response()->json(['message' => 'Item deleted successfully'], 200);
     }
 }
 ```
