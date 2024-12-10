@@ -1,52 +1,39 @@
+```php
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\LoginController;
-use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\OrderController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Login Page
-Route::get('/', function () {
-    return view('login'); // Ensure you have a login.blade.php in resources/views
+Route::prefix('users')->group(function () {
+    Route::get('/', [UserController::class, 'index'])->name('users.index');
+    Route::get('/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('/', [UserController::class, 'store'])->name('users.store');
+    Route::get('/{user}', [UserController::class, 'show'])->name('users.show');
+    Route::put('/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 });
 
-// Login Form Submission
-Route::post('/login', [LoginController::class, 'login'])->name('login');
+Route::prefix('products')->group(function () {
+    Route::get('/', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('/', [ProductController::class, 'store'])->name('products.store');
+    Route::get('/{product}', [ProductController::class, 'show'])->name('products.show');
+    Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+});
 
-// Define the route with the name 'dashboard'
-Route::middleware('auth')->get('/dashboard', function () {
-    return view('dashboard');
-})->name('dashboard');
+Route::prefix('orders')->group(function () {
+    Route::get('/', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/create', [OrderController::class, 'create'])->name('orders.create');
+    Route::post('/', [OrderController::class, 'store'])->name('orders.store');
+    Route::get('/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::put('/{order}', [OrderController::class, 'update'])->name('orders.update');
+    Route::delete('/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
+});
 
-
-// Profile Page
-// Profile Page
-Route::middleware('auth')->get('/profile', function () {
-    return view('profile');
-})->name('profile');
-
-// Inventory Routes
-Route::middleware('auth')->get('/inventory', [InventoryController::class, 'index'])->name('inventory');
-Route::middleware('auth')->post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
-
-
-// Warehouse Routes
-Route::middleware('auth')->get('/warehouse', [WarehouseController::class, 'index'])->name('warehouse');
-Route::middleware('auth')->post('/warehouse', [WarehouseController::class, 'store'])->name('warehouse.store');
-
-// Logout Route
-Route::post('/logout', function () {
-    session()->flush(); // Or Auth::logout() if using Laravel's built-in authentication
-    return redirect('/');
-})->name('logout');
+```
